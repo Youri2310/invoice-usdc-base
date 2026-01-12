@@ -1,14 +1,19 @@
 // src/app/invoice/[id]/page.tsx
+"use client";
 import Link from "next/link";
+import { use } from "react";
 import { getInvoiceById } from "@/lib/invoices";
 import { formatUsdc, usdcExplorerUrl } from "@/lib/usdc";
+import { PaymentButton } from "@/components/PaymentButton";
+import { ConnectWallet } from "@/components/ConnectWallet";
 
 export default function InvoiceDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const invoice = getInvoiceById(params.id);
+  const { id } = use(params);
+  const invoice = getInvoiceById(id);
 
   if (!invoice) {
     return (
@@ -24,9 +29,12 @@ export default function InvoiceDetailPage({
   return (
     <main className="max-w-3xl mx-auto p-6">
       <header className="mb-6">
-        <Link className="underline underline-offset-4" href="/">
-          ← Back
-        </Link>
+        <div className="flex justify-between items-center mb-3">
+          <Link className="underline underline-offset-4" href="/">
+            ← Back
+          </Link>
+          <ConnectWallet />
+        </div>
         <h1 className="text-2xl font-bold mt-3">{invoice.reference}</h1>
         <p className="text-gray-600 mt-1">{invoice.vendorName}</p>
       </header>
@@ -77,18 +85,12 @@ export default function InvoiceDetailPage({
           <div className="mt-1">{invoice.description}</div>
         </div>
 
-        <div className="mt-6 flex gap-3">
-          <button
-            disabled
-            className="rounded-lg px-4 py-2 bg-gray-200 text-gray-600 cursor-not-allowed"
-            title="Payment flow is implemented in a later step"
-          >
-            Pay in USDC (coming next)
-          </button>
+        <div className="mt-6 flex gap-3 items-start">
+          <PaymentButton invoice={invoice} />
 
           <Link
             href={`/invoice/${invoice.id}/status`}
-            className="rounded-lg px-4 py-2 border"
+            className="rounded-lg px-4 py-2 border hover:bg-gray-50"
           >
             View status
           </Link>
