@@ -1,0 +1,14 @@
+// src/lib/wagmi-config.ts
+import { http, createConfig } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
+import { injected } from "wagmi/connectors";
+
+export const config = createConfig({
+  chains: [baseSepolia],
+  connectors: [
+    injected(), // MetaMask, Coinbase Wallet, etc.
+  ],
+  transports: {
+    [baseSepolia.id]: http(),
+  },
+});

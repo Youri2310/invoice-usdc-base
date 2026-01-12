@@ -2,6 +2,7 @@
 import { InvoiceCard } from "@/components/InvoiceCard";
 import { listInvoices } from "@/lib/invoices";
 import { usdcExplorerUrl } from "@/lib/usdc";
+import { ConnectWallet } from "@/components/ConnectWallet";
 
 export default function HomePage() {
   const invoices = listInvoices();
@@ -9,9 +10,12 @@ export default function HomePage() {
   return (
     <main className="max-w-3xl mx-auto p-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">
-          Invoices (USDC on Base Sepolia)
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">
+            Invoices (USDC on Base Sepolia)
+          </h1>
+          <ConnectWallet />
+        </div>
         <p className="text-gray-600 mt-1">
           MVP: list → detail → (payment next)
         </p>
