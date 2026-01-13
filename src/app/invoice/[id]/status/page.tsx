@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { getInvoiceById } from "@/lib/invoices";
 import { formatUsdc } from "@/lib/usdc";
 import { txUrl } from "@/lib/chain";
+import { useInvoicePayment } from "@/hooks/useInvoicePayment";
 
 export default function InvoiceStatusPage({
   params,
@@ -14,7 +15,12 @@ export default function InvoiceStatusPage({
 }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
-  const txHash = searchParams.get("txHash");
+  const txHashFromUrl = searchParams.get("txHash");
+  const { payment } = useInvoicePayment(id);
+  
+  // Utiliser le txHash de l'URL ou celui du localStorage
+  const txHash = txHashFromUrl || payment?.txHash;
+  
   const invoice = getInvoiceById(id);
 
   if (!invoice) {
