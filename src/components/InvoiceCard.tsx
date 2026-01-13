@@ -1,12 +1,16 @@
 // src/components/InvoiceCard.tsx
+"use client";
 import Link from "next/link";
 import type { Invoice } from "@/lib/invoices";
 import { formatUsdc } from "@/lib/usdc";
+import { useInvoicePayment } from "@/hooks/useInvoicePayment";
 
-function badgeClass(status: Invoice["status"]) {
+function badgeClass(status: Invoice["status"] | "PAID" | "ERROR") {
   switch (status) {
     case "PAID":
       return "bg-green-100 text-green-800";
+    case "ERROR":
+      return "bg-red-100 text-red-800";
     case "DUE":
       return "bg-yellow-100 text-yellow-800";
     case "INVALID":
@@ -19,6 +23,14 @@ function badgeClass(status: Invoice["status"]) {
 }
 
 export function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const { isPaid, hasError } = useInvoicePayment(invoice.id);
+  
+  const displayStatus = isPaid 
+    ? "PAID" 
+    : hasError 
+    ? "ERROR" 
+    : invoice.status;
+
   return (
     <div className="rounded-xl border p-4 flex items-start justify-between gap-4">
       <div className="min-w-0">
@@ -26,10 +38,10 @@ export function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <div className="font-semibold">{invoice.reference}</div>
           <span
             className={`text-xs px-2 py-1 rounded-full ${badgeClass(
-              invoice.status
+              displayStatus
             )}`}
           >
-            {invoice.status}
+            {displayStatus}
           </span>
         </div>
 

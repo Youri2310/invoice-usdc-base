@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { getUsdcAddress, erc20Abi } from "@/lib/usdc";
+import { getUsdcAddress, erc20Abi, formatUsdc } from "@/lib/usdc";
+import { savePayment } from "@/lib/storage";
 import type { Invoice } from "@/lib/invoices";
 
 export type PaymentState = "idle" | "signing" | "pending" | "confirmed" | "error";
@@ -9,21 +10,65 @@ export type PaymentState = "idle" | "signing" | "pending" | "confirmed" | "error
 export function usePayInvoice() {
   const { address, isConnected, chain } = useAccount();
   const { writeContract, data: hash, error: writeError, reset } = useWriteContract();
-  const { isLoading: isPending, isSuccess } = useWaitForTransactionReceipt({ 
+  const { 
+    isLoading: isPending, 
+    isSuccess, 
+    isError: isReceiptError,
+    error: receiptError 
+  } = useWaitForTransactionReceipt({ 
     hash 
   });
 
   const [state, setState] = useState<PaymentState>("idle");
+  const [currentInvoice, setCurrentInvoice] = useState<Invoice | null>(null);
 
   // Mettre à jour l'état en fonction de la transaction
   useEffect(() => {
     if (isPending && state !== "pending") {
       setState("pending");
+      
+      // Timeout de sécurité : si après 60s toujours pending, passer en erreur
+      const timeout = setTimeout(() => {
+        if (state === "pending") {
+          setState("error");
+        }
+      }, 60000);
+      
+      return () => clearTimeout(timeout);
     }
     if (isSuccess && state !== "confirmed") {
       setState("confirmed");
+      
+      // Sauvegarder le paiement dans localStorage
+      if (hash && currentInvoice) {
+        savePayment({
+          invoiceId: currentInvoice.id,
+          txHash: hash,
+          timestamp: Date.now(),
+          amount: formatUsdc(currentInvoice.amountUsdc),
+          vendor: currentInvoice.vendorAddress,
+          status: "success",
+        });
+      }
     }
-  }, [isPending, isSuccess, state]);
+    // Gérer l'erreur de receipt (transaction échouée on-chain)
+    if (isReceiptError && state !== "error") {
+      setState("error");
+      
+      // Sauvegarder l'erreur dans localStorage
+      if (hash && currentInvoice && receiptError) {
+        savePayment({
+          invoiceId: currentInvoice.id,
+          txHash: hash,
+          timestamp: Date.now(),
+          amount: formatUsdc(currentInvoice.amountUsdc),
+          vendor: currentInvoice.vendorAddress,
+          status: "failed",
+          errorMessage: receiptError.message || "Transaction failed",
+        });
+      }
+    }
+  }, [isPending, isSuccess, isReceiptError, state, hash, currentInvoice]);
 
   const payInvoice = async (invoice: Invoice) => {
     if (!isConnected || !address) {
@@ -36,6 +81,7 @@ export function usePayInvoice() {
 
     try {
       setState("signing");
+      setCurrentInvoice(invoice); // Stocker la facture pour la sauvegarde
 
       writeContract({
         address: getUsdcAddress(),
@@ -58,7 +104,7 @@ export function usePayInvoice() {
     payInvoice,
     state,
     txHash: hash,
-    error: writeError,
+    error: writeError || receiptError,
     resetPayment,
   };
 }

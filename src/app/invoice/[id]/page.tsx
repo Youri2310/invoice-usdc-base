@@ -1,11 +1,13 @@
 // src/app/invoice/[id]/page.tsx
 "use client";
 import Link from "next/link";
-import { use } from "react";
+import { use, useState } from "react";
 import { getInvoiceById } from "@/lib/invoices";
 import { formatUsdc, usdcExplorerUrl } from "@/lib/usdc";
 import { PaymentButton } from "@/components/PaymentButton";
 import { ConnectWallet } from "@/components/ConnectWallet";
+import { useInvoicePayment } from "@/hooks/useInvoicePayment";
+import { txUrl } from "@/lib/chain";
 
 export default function InvoiceDetailPage({
   params,
@@ -14,6 +16,27 @@ export default function InvoiceDetailPage({
 }) {
   const { id } = use(params);
   const invoice = getInvoiceById(id);
+  const { isPaid, hasError, txHash, errorMessage } = useInvoicePayment(id);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
+
+  // Extraire un message d'erreur propre et lisible
+  const getCleanErrorMessage = (errorMessage: string): string => {
+    if (errorMessage.includes("exceeds balance")) {
+      return "Insufficient USDC balance";
+    }
+    if (errorMessage.includes("rejected") || errorMessage.includes("denied")) {
+      return "Transaction was rejected";
+    }
+    if (errorMessage.includes("Execution reverted")) {
+      const match = errorMessage.match(/Execution reverted.*?:\s*([^.]+)\./);
+      if (match) return match[1];
+    }
+    if (errorMessage.includes("execution reverted:")) {
+      const match = errorMessage.match(/execution reverted:\s*([^.]+)/);
+      if (match) return match[1];
+    }
+    return "Transaction failed on-chain";
+  };
 
   if (!invoice) {
     return (
@@ -43,7 +66,9 @@ export default function InvoiceDetailPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div>
             <div className="text-gray-500">Status</div>
-            <div className="font-medium">{invoice.status}</div>
+            <div className={`font-medium ${isPaid ? "text-green-600" : hasError ? "text-red-600" : ""}`}>
+              {isPaid ? "PAID" : hasError ? "ERROR" : invoice.status}
+            </div>
           </div>
 
           <div>
@@ -85,15 +110,71 @@ export default function InvoiceDetailPage({
           <div className="mt-1">{invoice.description}</div>
         </div>
 
-        <div className="mt-6 flex gap-3 items-start">
-          <PaymentButton invoice={invoice} />
+        {isPaid && txHash && (
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="text-sm font-medium text-green-800 mb-1">
+              ✓ Invoice already paid
+            </div>
+            <div className="text-xs text-green-700">
+              Transaction:{" "}
+              <a
+                href={txUrl(txHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2"
+              >
+                {txHash.slice(0, 10)}...{txHash.slice(-8)}
+              </a>
+            </div>
+          </div>
+        )}
 
-          <Link
-            href={`/invoice/${invoice.id}/status`}
-            className="rounded-lg px-4 py-2 border hover:bg-gray-50"
-          >
-            View status
-          </Link>
+        {hasError && txHash && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="text-sm font-medium text-red-800 mb-2">
+              ❌ Previous payment failed
+            </div>
+            <div className="text-sm text-red-700 mb-3">
+              {errorMessage ? getCleanErrorMessage(errorMessage) : "Transaction failed on-chain"}
+            </div>
+            
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowErrorDetails(!showErrorDetails)}
+                className="text-red-600 hover:text-red-800 text-xs font-medium underline underline-offset-2"
+              >
+                {showErrorDetails ? "Hide details" : "Show details"}
+              </button>
+              
+              {showErrorDetails && errorMessage && (
+                <div className="p-2 bg-red-100 rounded text-xs text-red-900 font-mono break-all max-h-40 overflow-y-auto">
+                  {errorMessage}
+                </div>
+              )}
+              
+              <a
+                href={txUrl(txHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="block text-red-600 hover:text-red-800 underline underline-offset-2 text-xs font-medium"
+              >
+                View transaction on BaseScan ↗
+              </a>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex gap-3 items-start">
+          {!isPaid ? (
+            <PaymentButton invoice={invoice} />
+          ) : (
+            <Link
+              href={`/invoice/${invoice.id}/status`}
+              className="rounded-lg px-4 py-2 bg-green-500 text-white hover:bg-green-600"
+            >
+              View Receipt
+            </Link>
+          )}
         </div>
       </section>
     </main>

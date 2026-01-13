@@ -26,7 +26,7 @@ export const seededInvoices: Invoice[] = [
     amountUsdc: parseUsdc("0.10"),
     currency: "USDC",
     dueDate: "2026-01-20",
-    description: "Transport & livraison - Janvier (TEST)",
+    description: "Transport & livraison - Janvier",
     status: "DUE",
   },
   {
@@ -38,7 +38,7 @@ export const seededInvoices: Invoice[] = [
     amountUsdc: parseUsdc("0.25"),
     currency: "USDC",
     dueDate: "2026-01-18",
-    description: "Hébergement & stockage (TEST)",
+    description: "Hébergement & stockage",
     status: "DUE",
   },
   {
@@ -46,11 +46,11 @@ export const seededInvoices: Invoice[] = [
     reference: "INV-2026-003",
     vendorName: "Design Studio",
     vendorAddress: "0x3333333333333333333333333333333333333333",
-    amountUsd: "0.50",
-    amountUsdc: parseUsdc("0.50"),
+    amountUsd: "400.00",
+    amountUsdc: parseUsdc("400.00"),
     currency: "USDC",
     dueDate: "2026-01-25",
-    description: "Maquettes landing page (TEST)",
+    description: "Maquettes landing page",
     status: "DUE",
   },
 ];
