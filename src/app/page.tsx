@@ -1,11 +1,28 @@
 // src/app/page.tsx
+"use client";
+import { useEffect, useState } from "react";
 import { InvoiceCard } from "@/components/InvoiceCard";
-import { listInvoices } from "@/lib/invoices";
+import type { Invoice } from "@/lib/invoices";
 import { usdcExplorerUrl } from "@/lib/usdc";
 import { ConnectWallet } from "@/components/ConnectWallet";
 
 export default function HomePage() {
-  const invoices = listInvoices();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => res.json())
+      .then((data) => {
+        setInvoices(data.invoices);
+      })
+      .catch((err) => {
+        console.error("Error fetching invoices:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <main className="max-w-3xl mx-auto p-6">
@@ -17,7 +34,7 @@ export default function HomePage() {
           <ConnectWallet />
         </div>
         <p className="text-gray-600 mt-1">
-          MVP: list → detail → (payment next)
+          N3: Server-side verification with blockchain parsing
         </p>
 
         <div className="mt-3 text-sm">
@@ -32,11 +49,15 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="flex flex-col gap-3">
-        {invoices.map((inv) => (
-          <InvoiceCard key={inv.id} invoice={inv} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center text-gray-500">Loading invoices...</div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {invoices.map((inv) => (
+            <InvoiceCard key={inv.id} invoice={inv} />
+          ))}
+        </div>
+      )}
     </main>
   );
 }

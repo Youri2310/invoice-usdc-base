@@ -1,8 +1,8 @@
 // src/app/invoice/[id]/page.tsx
 "use client";
 import Link from "next/link";
-import { use, useState } from "react";
-import { getInvoiceById } from "@/lib/invoices";
+import { use, useState, useEffect } from "react";
+import type { Invoice } from "@/lib/invoices";
 import { formatUsdc, usdcExplorerUrl } from "@/lib/usdc";
 import { PaymentButton } from "@/components/PaymentButton";
 import { ConnectWallet } from "@/components/ConnectWallet";
@@ -15,9 +15,24 @@ export default function InvoiceDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const invoice = getInvoiceById(id);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [loading, setLoading] = useState(true);
   const { isPaid, hasError, txHash, errorMessage } = useInvoicePayment(id);
   const [showErrorDetails, setShowErrorDetails] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/invoice/${id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setInvoice(data.invoice);
+      })
+      .catch((err) => {
+        console.error("Error fetching invoice:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [id]);
 
   // Extraire un message d'erreur propre et lisible
   const getCleanErrorMessage = (errorMessage: string): string => {
@@ -37,6 +52,14 @@ export default function InvoiceDetailPage({
     }
     return "Transaction failed on-chain";
   };
+
+  if (loading) {
+    return (
+      <main className="max-w-3xl mx-auto p-6">
+        <div className="text-center text-gray-500">Loading invoice...</div>
+      </main>
+    );
+  }
 
   if (!invoice) {
     return (
