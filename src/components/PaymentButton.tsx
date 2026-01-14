@@ -82,90 +82,103 @@ export function PaymentButton({ invoice }: Props) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <button
         onClick={state === "error" ? resetPayment : handlePay}
         disabled={isDisabled}
-        className={`rounded-lg px-4 py-2 font-medium transition-colors ${
+        className={`w-full rounded-xl px-6 py-4 font-semibold text-lg transition-all shadow-lg ${
           state === "confirmed"
-            ? "bg-green-500 text-white"
+            ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
             : state === "error"
-            ? "bg-red-500 text-white hover:bg-red-600"
-            : "bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            ? "bg-gradient-to-r from-red-500 to-rose-500 text-white hover:from-red-600 hover:to-rose-600"
+            : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed hover:shadow-xl"
         }`}
       >
         {getButtonText()}
       </button>
 
       {showConnectMessage && (
-        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm font-medium text-yellow-800">
-            ⚠️ Please connect your wallet first
-          </p>
+        <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-xl">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-yellow-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm font-medium text-yellow-800">
+              Please connect your wallet first
+            </p>
+          </div>
         </div>
       )}
 
       {state === "signing" && (
-        <p className="text-sm text-gray-600">
-          📝 Please sign the transaction in your wallet...
-        </p>
+        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-blue-800 font-medium">
+            Please sign the transaction in your wallet...
+          </p>
+        </div>
       )}
 
       {state === "pending" && txHash && (
-        <div className="text-sm">
-          <p className="text-gray-600 mb-1">⏳ Transaction pending...</p>
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm text-blue-800 font-medium">Transaction pending...</p>
+          </div>
           <a
             href={txUrl(txHash)}
             target="_blank"
             rel="noreferrer"
-            className="text-blue-600 underline underline-offset-4"
+            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
-            View on BaseScan ↗
+            View on BaseScan
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
           </a>
         </div>
       )}
 
       {state === "confirmed" && txHash && (
-        <div className="text-sm">
-          <p className="text-green-600 font-medium mb-1">✓ Payment confirmed!</p>
-          <p className="text-gray-600">Redirecting to receipt...</p>
+        <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded-xl">
+          <p className="text-sm font-semibold text-green-800 mb-2">✓ Payment confirmed!</p>
+          <p className="text-sm text-green-700">Redirecting to receipt...</p>
         </div>
       )}
 
       {state === "error" && error && (
-        <div className="text-sm">
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="font-medium text-red-800 mb-2">❌ Payment Failed</p>
-            <p className="text-red-700 mb-3">
-              {getCleanErrorMessage(error.message)}
-            </p>
-            
-            <div className="space-y-2">
-              <button
-                onClick={() => setShowErrorDetails(!showErrorDetails)}
-                className="text-red-600 hover:text-red-800 text-xs font-medium underline underline-offset-2"
-              >
-                {showErrorDetails ? "Hide details" : "Show details"}
-              </button>
-              
-              {showErrorDetails && (
-                <div className="p-2 bg-red-100 rounded text-xs text-red-900 font-mono break-all max-h-40 overflow-y-auto">
-                  {error.message}
-                </div>
-              )}
-              
-              {txHash && (
-                <a
-                  href={txUrl(txHash)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block text-red-600 hover:text-red-800 underline underline-offset-2 text-xs font-medium"
-                >
-                  View transaction on BaseScan ↗
-                </a>
-              )}
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-xl">
+          <p className="font-semibold text-red-800 mb-2">❌ Payment Failed</p>
+          <p className="text-sm text-red-700 mb-3">
+            {getCleanErrorMessage(error.message)}
+          </p>
+          
+          <button
+            onClick={() => setShowErrorDetails(!showErrorDetails)}
+            className="text-red-600 hover:text-red-800 text-xs font-medium underline underline-offset-2"
+          >
+            {showErrorDetails ? "Hide technical details" : "Show technical details"}
+          </button>
+          
+          {showErrorDetails && (
+            <div className="mt-3 p-3 bg-red-100 rounded-lg text-xs text-red-900 font-mono break-all max-h-40 overflow-y-auto">
+              {error.message}
             </div>
-          </div>
+          )}
+          
+          {txHash && (
+            <a
+              href={txUrl(txHash)}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+              View on BaseScan
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          )}
         </div>
       )}
     </div>
