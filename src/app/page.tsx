@@ -1,11 +1,28 @@
 // src/app/page.tsx
+"use client";
+import { useEffect, useState } from "react";
 import { InvoiceCard } from "@/components/InvoiceCard";
-import { listInvoices } from "@/lib/invoices";
+import type { Invoice } from "@/lib/invoices";
 import { usdcExplorerUrl } from "@/lib/usdc";
 import { ConnectWallet } from "@/components/ConnectWallet";
 
 export default function HomePage() {
-  const invoices = listInvoices();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/invoices")
+      .then((res) => res.json())
+      .then((data) => {
+        setInvoices(data.invoices);
+      })
+      .catch((err) => {
+        console.error("Error fetching invoices:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -45,9 +62,15 @@ export default function HomePage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             Your Invoices ({invoices.length})
           </h2>
-          {invoices.map((inv) => (
-            <InvoiceCard key={inv.id} invoice={inv} />
-          ))}
+          {loading ? (
+            <div className="text-center text-gray-500 py-8">Loading invoices...</div>
+          ) : (
+            <>
+              {invoices.map((inv) => (
+                <InvoiceCard key={inv.id} invoice={inv} />
+              ))}
+            </>
+          )}
         </div>
       </main>
     </div>

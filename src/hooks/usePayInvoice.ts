@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { getUsdcAddress, erc20Abi, formatUsdc } from "@/lib/usdc";
-import { savePayment } from "@/lib/storage";
+import { getUsdcAddress, erc20Abi } from "@/lib/usdc";
 import type { Invoice } from "@/lib/invoices";
 
 export type PaymentState = "idle" | "signing" | "pending" | "confirmed" | "error";
@@ -39,36 +38,46 @@ export function usePayInvoice() {
     if (isSuccess && state !== "confirmed") {
       setState("confirmed");
       
-      // Sauvegarder le paiement dans localStorage
+      // Appeler l'API de vérification serveur
       if (hash && currentInvoice) {
-        savePayment({
-          invoiceId: currentInvoice.id,
-          txHash: hash,
-          timestamp: Date.now(),
-          amount: formatUsdc(currentInvoice.amountUsdc),
-          vendor: currentInvoice.vendorAddress,
-          status: "success",
-        });
+        fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            txHash: hash,
+            invoiceId: currentInvoice.id,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data.success) {
+              console.error("Payment verification failed:", data.error);
+            }
+          })
+          .catch((err) => {
+            console.error("Error verifying payment:", err);
+          });
       }
     }
     // Gérer l'erreur de receipt (transaction échouée on-chain)
     if (isReceiptError && state !== "error") {
       setState("error");
       
-      // Sauvegarder l'erreur dans localStorage
+      // Enregistrer l'erreur côté serveur
       if (hash && currentInvoice && receiptError) {
-        savePayment({
-          invoiceId: currentInvoice.id,
-          txHash: hash,
-          timestamp: Date.now(),
-          amount: formatUsdc(currentInvoice.amountUsdc),
-          vendor: currentInvoice.vendorAddress,
-          status: "failed",
-          errorMessage: receiptError.message || "Transaction failed",
+        fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            txHash: hash,
+            invoiceId: currentInvoice.id,
+          }),
+        }).catch((err) => {
+          console.error("Error recording failed payment:", err);
         });
       }
     }
-  }, [isPending, isSuccess, isReceiptError, state, hash, currentInvoice]);
+  }, [isPending, isSuccess, isReceiptError, state, hash, currentInvoice, receiptError]);
 
   const payInvoice = async (invoice: Invoice) => {
     if (!isConnected || !address) {

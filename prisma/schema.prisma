@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Invoice {
+  id            String    @id
+  reference     String    @unique
+  vendorName    String
+  vendorAddress String
+  amountUsdc    String    // Stocké en string pour éviter les problèmes de précision
+  amountUsd     String
+  currency      String    @default("USDC")
+  dueDate       String
+  description   String
+  status        String    @default("DUE")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  payments      Payment[]
+}
+
+model Payment {
+  id           String    @id @default(uuid())
+  invoiceId    String
+  invoice      Invoice   @relation(fields: [invoiceId], references: [id])
+  txHash       String    @unique
+  fromAddress  String
+  toAddress    String
+  amount       String
+  status       String    // VERIFIED, FAILED, PENDING
+  errorMessage String?
+  verifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([invoiceId])
+  @@index([txHash])
+}
